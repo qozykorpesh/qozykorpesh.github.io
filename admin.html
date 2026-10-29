@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Qozy Korpesh — админка</title>
+<style>:root{color-scheme:dark}body{margin:0;background:#0a0909;color:#ecded6;font:16px/1.5 system-ui,sans-serif;padding:20px;max-width:760px;margin:auto}
+h1{font:300 28px Georgia,serif;letter-spacing:.1em}input,button{font:inherit;background:transparent;color:inherit;border:1px solid #4a4340;padding:12px 14px;border-radius:0}
+input{width:100%;box-sizing:border-box;margin-bottom:10px}button{cursor:pointer}button:hover{background:#ecded6;color:#0a0909}
+.tabs{display:flex;gap:8px;margin:14px 0}.tabs button.on{background:#ecded6;color:#0a0909}
+.c{border:1px solid #2c2725;padding:16px;margin-bottom:12px}.c b{font:300 26px Georgia,serif;letter-spacing:.1em}.m{color:#a89b94;font-size:14px}
+.s{float:right;font-size:13px;padding:2px 10px;border:1px solid #4a4340}.a{border-color:#7fbf8f;color:#7fbf8f}.c div.b{display:flex;gap:8px;margin-top:12px}#e{color:#e0a59a}</style></head><body>
+<h1>Qozy Korpesh · админка</h1>
+<div id="lg"><input id="t" type="password" placeholder="Пароль администратора"><button id="in">Войти</button><p id="e"></p></div>
+<div id="ap" hidden><input id="q" placeholder="Поиск: код, имя"><div class="tabs"><button data-f="" class="on">Все</button><button data-f="pending">Ждут оплаты</button><button data-f="active">Активные</button></div><div id="ls"></div></div>
+<script>
+var T='',items=[],F='';
+function $(i){return document.getElementById(i)}
+async function api(p,o){o=o||{};o.headers={authorization:'Bearer '+T,'content-type':'application/json'};var r=await fetch('/api/admin/'+p,o);return {s:r.status,j:await r.json().catch(function(){return {}})}}
+async function load(){var r=await api('list');if(r.s!==200){$('e').textContent=r.s===429?'Слишком много попыток, подождите.':'Неверный пароль.';return false}items=r.j.items;$('lg').hidden=true;$('ap').hidden=false;draw();return true}
+function draw(){var q=$('q').value.toLowerCase(),L=$('ls');L.textContent='';
+items.filter(function(x){return(!F||x.status===F)&&(x.code+x.giver+x.receiver).toLowerCase().indexOf(q)>-1}).forEach(function(x){
+var d=document.createElement('div');d.className='c';
+var s=document.createElement('span');s.className='s'+(x.status==='active'?' a':'');s.textContent=x.status==='active'?'активен':'ждёт оплаты';d.appendChild(s);
+var b=document.createElement('b');b.textContent=x.code;d.appendChild(b);
+var p=document.createElement('div');p.className='m';p.textContent='Даритель: '+x.giver+' ('+x.giver_birth+')';d.appendChild(p);
+var p2=document.createElement('div');p2.className='m';p2.textContent='Получатель: '+x.receiver+' ('+x.receiver_birth+')';d.appendChild(p2);
+var p3=document.createElement('div');p3.className='m';p3.textContent=new Date(x.created_at).toLocaleString('ru-RU');d.appendChild(p3);
+var w=document.createElement('div');w.className='b';
+if(x.status!=='active'){var a=document.createElement('button');a.textContent='Активировать';a.onclick=async function(){await api('activate',{method:'POST',body:JSON.stringify({code:x.code})});load()};w.appendChild(a)}
+var k=document.createElement('button');k.textContent='Удалить';k.onclick=async function(){if(confirm('Удалить '+x.code+'? Это нельзя отменить.')){await api('delete',{method:'POST',body:JSON.stringify({code:x.code})});load()}};w.appendChild(k);
+d.appendChild(w);L.appendChild(d)});
+if(!L.children.length)L.textContent='Ничего нет.'}
+$('in').onclick=function(){T=$('t').value;load().then(function(ok){if(ok)try{sessionStorage.setItem('qa',T)}catch(e){}})};
+$('q').oninput=draw;
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){F=b.dataset.f;document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b)});draw()}});
+try{T=sessionStorage.getItem('qa')||'';if(T)load()}catch(e){}
+</script></body></html>

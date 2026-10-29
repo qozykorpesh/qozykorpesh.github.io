@@ -1,0 +1,1 @@
+# qozykorpesh.github.io
